@@ -11,9 +11,20 @@
 <div class="tables-grid">
   {% for table in tables %}
   <div class="table-card">
-    <div class="table-card__name">{{ table.name }}</div>
+    <div class="table-card__name">
+      {{ table.name }}
+      {% if table.created_by == session.player_id %}
+        <span class="badge">Owner</span>
+      {% endif %}
+    </div>
     <div class="table-card__meta">{{ member_counts[table.id] }} member{{ 's' if member_counts[table.id] != 1 else '' }}</div>
     <a href="{{ url_for('dashboard', table_id=table.id) }}" class="btn btn--primary btn--full">View Table</a>
+    {% if table.created_by != session.player_id %}
+    <form method="post" action="{{ url_for('leave_table', table_id=table.id) }}"
+          onsubmit="return confirm('Leave {{ table.name }}? Your results will be removed.')">
+      <button type="submit" class="btn btn--ghost btn--full btn--sm">Leave Table</button>
+    </form>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

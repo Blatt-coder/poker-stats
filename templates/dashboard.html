@@ -36,13 +36,21 @@
           <a href="{{ url_for('player_profile', table_id=table.id, player_id=row.id) }}" class="player-link">
             {{ row.username }}
           </a>
+          {% if row.id == table.created_by %}<span class="badge">Owner</span>{% endif %}
         </td>
         <td>{{ row.games_played }}</td>
         <td class="amount {% if row.net_total >= 0 %}amount--pos{% else %}amount--neg{% endif %}">
           {% if row.net_total >= 0 %}+{% endif %}₪{{ "%.2f"|format(row.net_total) }}
         </td>
-        <td>
+        <td class="row-actions">
           <a href="{{ url_for('player_profile', table_id=table.id, player_id=row.id) }}" class="btn btn--sm btn--ghost">View</a>
+          {% if is_creator and row.id != current_player_id %}
+          <form method="post" action="{{ url_for('remove_player', table_id=table.id, player_id=row.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('Remove {{ row.username }} from this table?')">
+            <button type="submit" class="btn btn--sm btn--danger">Remove</button>
+          </form>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

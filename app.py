@@ -108,6 +108,45 @@ def home():
 
 
 # ---------------------------------------------------------------------------
+# Leave table
+# ---------------------------------------------------------------------------
+
+@app.route("/table/<int:table_id>/leave", methods=["POST"])
+@login_required
+def leave_table(table_id):
+    table = db.get_table_by_id(table_id)
+    if not table:
+        flash("Table not found.", "error")
+        return redirect(url_for("home"))
+    removed = db.leave_table(table_id, session["player_id"])
+    if not removed:
+        flash("You created this table and cannot leave it.", "error")
+    else:
+        flash(f'You left "{table["name"]}".')
+    return redirect(url_for("home"))
+
+
+# ---------------------------------------------------------------------------
+# Remove player (creator only)
+# ---------------------------------------------------------------------------
+
+@app.route("/table/<int:table_id>/remove/<int:player_id>", methods=["POST"])
+@login_required
+def remove_player(table_id, player_id):
+    table = _check_table_access(table_id)
+    if not table or not db.is_table_creator(table_id, session["player_id"]):
+        flash("Not authorized.", "error")
+        return redirect(url_for("home"))
+    if player_id == session["player_id"]:
+        flash("You cannot remove yourself.", "error")
+        return redirect(url_for("dashboard", table_id=table_id))
+    player = db.get_player_by_id(player_id)
+    db.remove_player_from_table(table_id, player_id)
+    flash(f'{"" if not player else player["username"]} was removed from the table.', "success")
+    return redirect(url_for("dashboard", table_id=table_id))
+
+
+# ---------------------------------------------------------------------------
 # Create table
 # ---------------------------------------------------------------------------
 
@@ -159,11 +198,13 @@ def dashboard(table_id):
         return redirect(url_for("home"))
     session["current_table_id"] = table_id
     leaderboard = db.get_leaderboard(table_id)
+    is_creator = db.is_table_creator(table_id, session["player_id"])
     return render_template(
         "dashboard.html",
         table=table,
         leaderboard=leaderboard,
         current_player_id=session["player_id"],
+        is_creator=is_creator,
     )
 
 
@@ -219,6 +260,7 @@ def player_profile(table_id, player_id):
         running += r["amount"]
         cumulative.append({"date": r["game_date"], "value": round(running, 2)})
 
+    is_creator = db.is_table_creator(table_id, session["player_id"])
     return render_template(
         "player.html",
         table=table,
@@ -227,6 +269,7 @@ def player_profile(table_id, player_id):
         results=results,
         cumulative=cumulative,
         is_own_profile=(player_id == session["player_id"]),
+        is_creator=is_creator,
     )
 
 
@@ -318,33 +361,50 @@ def api_player_cumulative(table_id, player_id):
 @login_required
 def edit_result(result_id):
     result = db.get_result_by_id(result_id)
-    if not result or result["player_id"] != session["player_id"]:
-        flash("Result not found or not yours.", "error")
+    if not result:
+        flash("Result not found.", "error")
         return redirect(url_for("home"))
     table_id = result["table_id"]
+    is_owner = result["player_id"] == session["player_id"]
+    is_creator = db.is_table_creator(table_id, session["player_id"])
+    if not is_owner and not is_creator:
+        flash("Not authorized.", "error")
+        return redirect(url_for("home"))
     try:
         amount = float(request.form["amount"])
     except ValueError:
         flash("Amount must be a number.", "error")
-        return redirect(url_for("player_profile", table_id=table_id, player_id=session["player_id"]))
+        return redirect(url_for("player_profile", table_id=table_id, player_id=result["player_id"]))
     game_date = request.form.get("game_date") or result["game_date"]
     notes = request.form.get("notes", "").strip()
-    db.update_result(result_id, session["player_id"], amount, game_date, notes)
+    if is_owner:
+        db.update_result(result_id, session["player_id"], amount, game_date, notes)
+    else:
+        db.update_result_by_id(result_id, amount, game_date, notes)
     flash("Result updated.", "success")
-    return redirect(url_for("player_profile", table_id=table_id, player_id=session["player_id"]))
+    return redirect(url_for("player_profile", table_id=table_id, player_id=result["player_id"]))
 
 
 @app.route("/result/<int:result_id>/delete", methods=["POST"])
 @login_required
 def delete_result(result_id):
     result = db.get_result_by_id(result_id)
-    if not result or result["player_id"] != session["player_id"]:
-        flash("Result not found or not yours.", "error")
+    if not result:
+        flash("Result not found.", "error")
         return redirect(url_for("home"))
     table_id = result["table_id"]
-    db.delete_result(result_id, session["player_id"])
+    is_owner = result["player_id"] == session["player_id"]
+    is_creator = db.is_table_creator(table_id, session["player_id"])
+    if not is_owner and not is_creator:
+        flash("Not authorized.", "error")
+        return redirect(url_for("home"))
+    target_player_id = result["player_id"]
+    if is_owner:
+        db.delete_result(result_id, session["player_id"])
+    else:
+        db.delete_result_by_id(result_id)
     flash("Result deleted.", "success")
-    return redirect(url_for("player_profile", table_id=table_id, player_id=session["player_id"]))
+    return redirect(url_for("player_profile", table_id=table_id, player_id=target_player_id))
 
 
 db.init_db()

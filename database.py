@@ -263,6 +263,53 @@ def get_tables_for_player(player_id):
     return rows
 
 
+def is_table_creator(table_id, player_id):
+    conn = get_db()
+    row = _exec(conn, "SELECT 1 FROM poker_tables WHERE id = ? AND created_by = ?", (table_id, player_id)).fetchone()
+    conn.close()
+    return row is not None
+
+
+def leave_table(table_id, player_id):
+    """Remove player from table and delete their results. Returns False if player is the creator."""
+    conn = get_db()
+    table = _exec(conn, "SELECT created_by FROM poker_tables WHERE id = ?", (table_id,)).fetchone()
+    if table and table["created_by"] == player_id:
+        conn.close()
+        return False
+    _exec(conn, "DELETE FROM game_results WHERE player_id = ? AND table_id = ?", (player_id, table_id))
+    _exec(conn, "DELETE FROM table_members WHERE table_id = ? AND player_id = ?", (table_id, player_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def remove_player_from_table(table_id, player_id):
+    """Creator action: remove a player and their results from the table."""
+    conn = get_db()
+    _exec(conn, "DELETE FROM game_results WHERE player_id = ? AND table_id = ?", (player_id, table_id))
+    _exec(conn, "DELETE FROM table_members WHERE table_id = ? AND player_id = ?", (table_id, player_id))
+    conn.commit()
+    conn.close()
+
+
+def update_result_by_id(result_id, amount, game_date, notes):
+    """Update any result regardless of owner (creator/admin use)."""
+    conn = get_db()
+    _exec(conn, "UPDATE game_results SET amount=?, game_date=?, notes=? WHERE id=?",
+          (amount, game_date, notes, result_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_result_by_id(result_id):
+    """Delete any result regardless of owner (creator/admin use)."""
+    conn = get_db()
+    _exec(conn, "DELETE FROM game_results WHERE id=?", (result_id,))
+    conn.commit()
+    conn.close()
+
+
 def get_table_member_count(table_id):
     conn = get_db()
     row = _exec(conn, "SELECT COUNT(*) AS c FROM table_members WHERE table_id = ?", (table_id,)).fetchone()

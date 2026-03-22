@@ -78,7 +78,7 @@
         <th>Date</th>
         <th>Amount</th>
         <th>Notes</th>
-        {% if is_own_profile %}<th></th>{% endif %}
+        {% if is_own_profile or is_creator %}<th></th>{% endif %}
       </tr>
     </thead>
     <tbody>
@@ -89,7 +89,7 @@
           {% if r.amount >= 0 %}+{% endif %}₪{{ "%.2f"|format(r.amount) }}
         </td>
         <td class="notes-cell">{{ r.notes or "—" }}</td>
-        {% if is_own_profile %}
+        {% if is_own_profile or is_creator %}
         <td class="row-actions">
           <button class="btn btn--sm btn--ghost"
                   onclick="openEditModal({{ r.id }}, '{{ r.game_date }}', {{ r.amount }}, {{ r.notes|tojson }})">
@@ -111,7 +111,7 @@
   {% endif %}
 </div>
 
-{% if is_own_profile %}
+{% if is_own_profile or is_creator %}
 <!-- Edit modal -->
 <div id="editModal" class="modal-backdrop" style="display:none">
   <div class="modal-box">
