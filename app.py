@@ -275,7 +275,8 @@ def delete_result(result_id):
     return redirect(url_for("player_profile", player_id=session["player_id"]))
 
 
+db.init_db()
+db.seed_sample_data()
+
 if __name__ == "__main__":
-    db.init_db()
-    db.seed_sample_data()
     app.run(debug=True)

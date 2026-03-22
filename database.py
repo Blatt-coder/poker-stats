@@ -7,6 +7,9 @@ from datetime import date, timedelta
 # ---------------------------------------------------------------------------
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+# Render provides postgres:// but psycopg2 requires postgresql://
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 _USE_PG = bool(DATABASE_URL)
 
 if _USE_PG:
