@@ -8,7 +8,6 @@ import database as db
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
-INVITE_CODE = os.environ.get("INVITE_CODE", "")
 
 
 @app.before_request
@@ -56,10 +55,7 @@ def register():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"]
-        invite = request.form.get("invite_code", "").strip()
-        if INVITE_CODE and invite != INVITE_CODE:
-            flash("Invalid invite code.", "error")
-        elif not username or not password:
+        if not username or not password:
             flash("Username and password are required.", "error")
         elif len(password) < 4:
             flash("Password must be at least 4 characters.", "error")
@@ -72,7 +68,7 @@ def register():
                 flash(f"Welcome, {username}!", "success")
                 return redirect(url_for("dashboard"))
             flash(err, "error")
-    return render_template("register.html", invite_required=bool(INVITE_CODE))
+    return render_template("register.html")
 
 
 @app.route("/logout")
