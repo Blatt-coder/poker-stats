@@ -276,7 +276,7 @@ def delete_result(result_id):
 
 
 db.init_db()
-db.seed_sample_data()
+db.delete_demo_data()
 
 if __name__ == "__main__":
     app.run(debug=True)

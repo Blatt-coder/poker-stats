@@ -239,61 +239,14 @@ def get_summary_stats(player_id):
     }
 
 
-def seed_sample_data():
-    """Insert sample data if the DB is empty."""
+def delete_demo_data():
+    """Remove demo accounts and their data if they exist."""
+    demo_users = ("alice", "bob", "charlie", "diana")
     conn = get_db()
-    count = _exec(conn, "SELECT COUNT(*) AS c FROM players").fetchone()["c"]
+    for username in demo_users:
+        row = _exec(conn, "SELECT id FROM players WHERE username = ?", (username,)).fetchone()
+        if row:
+            _exec(conn, "DELETE FROM game_results WHERE player_id = ?", (row["id"],))
+            _exec(conn, "DELETE FROM players WHERE id = ?", (row["id"],))
+    conn.commit()
     conn.close()
-
-    if count > 0:
-        return
-
-    for username in ("alice", "bob", "charlie", "diana"):
-        create_player(username, "password")
-
-    alice   = get_player_by_username("alice")["id"]
-    bob     = get_player_by_username("bob")["id"]
-    charlie = get_player_by_username("charlie")["id"]
-    diana   = get_player_by_username("diana")["id"]
-
-    today = date.today()
-    sessions = [
-        (alice,    120,  90, "Great night"),
-        (bob,     -50,   90, "Bad cards"),
-        (charlie,  30,   90, "Steady play"),
-        (diana,   -20,   90, ""),
-        (alice,   -80,   75, ""),
-        (bob,      200,  75, "Bluffed everyone"),
-        (charlie, -40,   75, ""),
-        (diana,    90,   75, "Hit two straights"),
-        (alice,    50,   60, ""),
-        (bob,     -30,   60, ""),
-        (charlie,  110,  60, "Monster pot"),
-        (diana,   -60,   60, ""),
-        (alice,   -100,  45, "Tilted"),
-        (bob,      80,   45, ""),
-        (charlie, -20,   45, ""),
-        (diana,    150,  45, "Best night ever"),
-        (alice,    40,   30, ""),
-        (bob,     -90,   30, ""),
-        (charlie,  60,   30, ""),
-        (diana,   -30,   30, ""),
-        (alice,    70,   20, ""),
-        (bob,      110,  20, "On a roll"),
-        (charlie, -80,   20, ""),
-        (diana,    20,   20, ""),
-        (alice,   -40,   14, ""),
-        (bob,     -60,   14, ""),
-        (charlie,  90,   14, ""),
-        (diana,    30,   14, ""),
-        (alice,    200,  7,  "Won the big pot"),
-        (bob,     -20,   7,  ""),
-        (charlie, -50,   7,  ""),
-        (diana,    80,   7,  ""),
-        (alice,   -30,   3,  ""),
-        (bob,      60,   3,  ""),
-        (charlie,  40,   3,  ""),
-        (diana,   -90,   3,  "Rough session"),
-    ]
-    for pid, amount, days_ago, notes in sessions:
-        log_result(pid, amount, (today - timedelta(days=days_ago)).isoformat(), notes)
