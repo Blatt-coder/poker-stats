@@ -407,6 +407,11 @@ def delete_result(result_id):
     return redirect(url_for("player_profile", table_id=table_id, player_id=target_player_id))
 
 
+@app.route("/ping")
+def ping():
+    return "ok", 200
+
+
 db.init_db()
 db.delete_demo_data()
 
