@@ -1,0 +1,18 @@
+databases:
+  - name: poker-db
+    plan: free
+
+services:
+  - type: web
+    name: poker-stats
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: poker-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true

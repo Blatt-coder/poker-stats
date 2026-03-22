@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PokerStats{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Dashboard</h2>
+  <a href="{{ url_for('log_game') }}" class="btn btn--primary">+ Log Game</a>
+</div>
+
+<!-- Leaderboard -->
+<div class="card">
+  <h3 class="card-title">Leaderboard</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Player</th>
+        <th>Games</th>
+        <th>Net Total</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in leaderboard %}
+      <tr {% if row.id == current_player_id %}class="row--highlight"{% endif %}>
+        <td>{{ loop.index }}</td>
+        <td>
+          <a href="{{ url_for('player_profile', player_id=row.id) }}" class="player-link">
+            {{ row.username }}
+          </a>
+        </td>
+        <td>{{ row.games_played }}</td>
+        <td class="amount {% if row.net_total >= 0 %}amount--pos{% else %}amount--neg{% endif %}">
+          {% if row.net_total >= 0 %}+{% endif %}₪{{ "%.2f"|format(row.net_total) }}
+        </td>
+        <td>
+          <a href="{{ url_for('player_profile', player_id=row.id) }}" class="btn btn--sm btn--ghost">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="card chart-card">
+    <h3 class="card-title">Cumulative Winnings Over Time</h3>
+    <div class="chart-container">
+      <canvas id="lineChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <h3 class="card-title">Net Results Comparison</h3>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const chartDefaults = {
+  color: "#9ca3af",
+  font: { family: "'Inter', sans-serif" },
+};
+Chart.defaults.color = chartDefaults.color;
+
+// Line chart
+fetch("/api/chart/cumulative")
+  .then(r => r.json())
+  .then(data => {
+    new Chart(document.getElementById("lineChart"), {
+      type: "line",
+      data: data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y >= 0 ? "+" : ""}₪${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "#1f2937" },
+            ticks: { maxTicksLimit: 10 }
+          },
+          y: {
+            grid: { color: "#1f2937" },
+            ticks: {
+              callback: v => (v >= 0 ? "+" : "") + "₪" + v.toFixed(0)
+            }
+          }
+        }
+      }
+    });
+  });
+
+// Bar chart
+fetch("/api/chart/bar")
+  .then(r => r.json())
+  .then(data => {
+    new Chart(document.getElementById("barChart"), {
+      type: "bar",
+      data: data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y >= 0 ? "+" : ""}₪${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            grid: { color: "#1f2937" },
+            ticks: {
+              callback: v => (v >= 0 ? "+" : "") + "₪" + v.toFixed(0)
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

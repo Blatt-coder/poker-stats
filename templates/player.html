@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}{{ player.username }}'s Stats — PokerStats{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>
+    {{ player.username }}'s Stats
+    {% if is_own_profile %}<span class="badge">You</span>{% endif %}
+  </h2>
+  {% if is_own_profile %}
+  <a href="{{ url_for('log_game') }}" class="btn btn--primary">+ Log Game</a>
+  {% endif %}
+</div>
+
+<!-- Stat cards -->
+<div class="stats-grid">
+  <div class="stat-card {% if stats.all_time_net >= 0 %}stat-card--pos{% else %}stat-card--neg{% endif %}">
+    <div class="stat-label">All-Time Net</div>
+    <div class="stat-value">
+      {% if stats.all_time_net >= 0 %}+{% endif %}₪{{ "%.2f"|format(stats.all_time_net) }}
+    </div>
+    <div class="stat-sub">{{ stats.all_time_games }} sessions</div>
+  </div>
+
+  <div class="stat-card {% if stats.last30_net >= 0 %}stat-card--pos{% else %}stat-card--neg{% endif %}">
+    <div class="stat-label">Last 30 Days</div>
+    <div class="stat-value">
+      {% if stats.last30_net >= 0 %}+{% endif %}₪{{ "%.2f"|format(stats.last30_net) }}
+    </div>
+    <div class="stat-sub">{{ stats.last30_games }} sessions</div>
+  </div>
+
+  <div class="stat-card {% if stats.last7_net >= 0 %}stat-card--pos{% else %}stat-card--neg{% endif %}">
+    <div class="stat-label">Last 7 Days</div>
+    <div class="stat-value">
+      {% if stats.last7_net >= 0 %}+{% endif %}₪{{ "%.2f"|format(stats.last7_net) }}
+    </div>
+    <div class="stat-sub">{{ stats.last7_games }} sessions</div>
+  </div>
+
+  <div class="stat-card stat-card--neutral">
+    <div class="stat-label">Best Session</div>
+    <div class="stat-value amount--pos">
+      {% if stats.best_session > 0 %}+{% endif %}₪{{ "%.2f"|format(stats.best_session) }}
+    </div>
+  </div>
+
+  <div class="stat-card stat-card--neutral">
+    <div class="stat-label">Worst Session</div>
+    <div class="stat-value amount--neg">
+      ₪{{ "%.2f"|format(stats.worst_session) }}
+    </div>
+  </div>
+</div>
+
+<!-- Cumulative line chart -->
+<div class="card chart-card">
+  <h3 class="card-title">Cumulative P&L — {{ player.username }}</h3>
+  <div class="chart-container">
+    <canvas id="playerLineChart"></canvas>
+  </div>
+</div>
+
+<!-- Session history -->
+<div class="card">
+  <h3 class="card-title">Session History</h3>
+  {% if results %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Notes</th>
+        {% if is_own_profile %}<th></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results|reverse %}
+      <tr>
+        <td>{{ r.game_date }}</td>
+        <td class="amount {% if r.amount >= 0 %}amount--pos{% else %}amount--neg{% endif %}">
+          {% if r.amount >= 0 %}+{% endif %}₪{{ "%.2f"|format(r.amount) }}
+        </td>
+        <td class="notes-cell">{{ r.notes or "—" }}</td>
+        {% if is_own_profile %}
+        <td class="row-actions">
+          <button class="btn btn--sm btn--ghost"
+                  onclick="openEditModal({{ r.id }}, '{{ r.game_date }}', {{ r.amount }}, {{ r.notes|tojson }})">
+            Edit
+          </button>
+          <form method="post" action="{{ url_for('delete_result', result_id=r.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('Delete this result?')">
+            <button type="submit" class="btn btn--sm btn--danger">Delete</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No sessions logged yet.</p>
+  {% endif %}
+</div>
+
+{% if is_own_profile %}
+<!-- Edit modal -->
+<div id="editModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <h3 class="modal-title">Edit Result</h3>
+    <form id="editForm" method="post" class="form">
+      <div class="form-group">
+        <label for="edit_amount">Amount (₪)</label>
+        <input id="edit_amount" name="amount" type="number" step="0.01" required />
+      </div>
+      <div class="form-group">
+        <label for="edit_date">Date</label>
+        <input id="edit_date" name="game_date" type="date" required />
+      </div>
+      <div class="form-group">
+        <label for="edit_notes">Notes <span class="optional">(optional)</span></label>
+        <textarea id="edit_notes" name="notes" rows="2"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+Chart.defaults.color = "#9ca3af";
+
+const cumulativeData = {{ cumulative | tojson }};
+const labels = cumulativeData.map(d => d.date);
+const values = cumulativeData.map(d => d.value);
+
+const pointColors = values.map(v => v >= 0 ? "#10b981" : "#ef4444");
+
+new Chart(document.getElementById("playerLineChart"), {
+  type: "line",
+  data: {
+    labels,
+    datasets: [{
+      label: "Cumulative P&L",
+      data: values,
+      borderColor: "#6366f1",
+      backgroundColor: "rgba(99,102,241,0.1)",
+      pointBackgroundColor: pointColors,
+      pointRadius: 4,
+      tension: 0.3,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.y >= 0 ? "+" : ""}₪${ctx.parsed.y.toFixed(2)}`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: "#1f2937" } },
+      y: {
+        grid: { color: "#1f2937" },
+        ticks: {
+          callback: v => (v >= 0 ? "+" : "") + "₪" + v.toFixed(0)
+        }
+      }
+    }
+  }
+});
+
+function openEditModal(id, date, amount, notes) {
+  document.getElementById("editForm").action = "/result/" + id + "/edit";
+  document.getElementById("edit_amount").value = amount;
+  document.getElementById("edit_date").value = date;
+  document.getElementById("edit_notes").value = notes || "";
+  document.getElementById("editModal").style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+
+document.getElementById("editModal")?.addEventListener("click", function(e) {
+  if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}

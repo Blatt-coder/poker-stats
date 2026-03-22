@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Log Game — PokerStats{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Log Game Result</h2>
+</div>
+
+<div class="card form-card">
+  <form method="post" class="form">
+    <div class="form-group">
+      <label for="amount">Amount Won / Lost (₪)</label>
+      <input id="amount" name="amount" type="number" step="0.01"
+             placeholder="e.g. 150 or -75" required />
+      <p class="form-hint">Positive = won, negative = lost</p>
+    </div>
+
+    <div class="form-group">
+      <label for="game_date">Date</label>
+      <input id="game_date" name="game_date" type="date" value="{{ today }}" required />
+    </div>
+
+    <div class="form-group">
+      <label for="notes">Notes <span class="optional">(optional)</span></label>
+      <textarea id="notes" name="notes" rows="3"
+                placeholder="How did it go? Any memorable hands?"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn btn--ghost">Cancel</a>
+      <button type="submit" class="btn btn--primary">Save Result</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
