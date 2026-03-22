@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Create Table — PokerStats{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Create a New Table</h2>
+</div>
+
+<div class="card form-card">
+  <form method="post" class="form">
+    <div class="form-group">
+      <label for="name">Table Name</label>
+      <input id="name" name="name" type="text" placeholder="e.g. Friday Night Poker"
+             required maxlength="64" autofocus />
+    </div>
+    <div class="form-actions">
+      <a href="{{ url_for('home') }}" class="btn btn--ghost">Cancel</a>
+      <button type="submit" class="btn btn--primary">Create Table</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

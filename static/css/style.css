@@ -87,6 +87,7 @@ a:hover { text-decoration: underline; }
 }
 .alert--success { background: #064e3b; border-color: #065f46; color: #6ee7b7; }
 .alert--error   { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
+.alert--info    { background: #1e3a5f; border-color: #1d4ed8; color: #93c5fd; }
 
 /* ── Cards ────────────────────────────────────────────────── */
 .card {
@@ -366,4 +367,83 @@ a:hover { text-decoration: underline; }
   color: var(--muted);
   padding: 2rem;
   font-size: .9rem;
+}
+
+/* ── Home: tables grid ────────────────────────────────────── */
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  box-shadow: var(--shadow);
+  transition: border-color .15s;
+}
+
+.table-card:hover { border-color: var(--accent); }
+
+.table-card__name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.table-card__meta {
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+/* ── Home: empty state ────────────────────────────────────── */
+.empty-home {
+  text-align: center;
+  padding: 5rem 1rem;
+}
+
+.empty-home__icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  opacity: .3;
+}
+
+.empty-home__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+
+.empty-home__sub {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  font-size: .95rem;
+}
+
+/* ── Page header actions / table label ───────────────────── */
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.page-header__table {
+  font-size: .85rem;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .25rem .75rem;
+}
+
+/* ── Invite copied notice ─────────────────────────────────── */
+.invite-copied {
+  font-size: .85rem;
+  color: var(--green);
+  margin-bottom: 1rem;
 }

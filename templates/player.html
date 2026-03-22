@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ player.username }}'s Stats — PokerStats{% endblock %}
+{% block title %}{{ player.username }}'s Stats — {{ table.name }}{% endblock %}
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -11,9 +11,12 @@
     {{ player.username }}'s Stats
     {% if is_own_profile %}<span class="badge">You</span>{% endif %}
   </h2>
-  {% if is_own_profile %}
-  <a href="{{ url_for('log_game') }}" class="btn btn--primary">+ Log Game</a>
-  {% endif %}
+  <div class="page-header__actions">
+    <span class="page-header__table">{{ table.name }}</span>
+    {% if is_own_profile %}
+    <a href="{{ url_for('log_game', table_id=table.id) }}" class="btn btn--primary">+ Log Game</a>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Stat cards -->
@@ -140,49 +143,51 @@
 <script>
 Chart.defaults.color = "#9ca3af";
 
-const cumulativeData = {{ cumulative | tojson }};
-const labels = cumulativeData.map(d => d.date);
-const values = cumulativeData.map(d => d.value);
+const TABLE_ID = {{ table.id }};
+const PLAYER_ID = {{ player.id }};
 
-const pointColors = values.map(v => v >= 0 ? "#10b981" : "#ef4444");
-
-new Chart(document.getElementById("playerLineChart"), {
-  type: "line",
-  data: {
-    labels,
-    datasets: [{
-      label: "Cumulative P&L",
-      data: values,
-      borderColor: "#6366f1",
-      backgroundColor: "rgba(99,102,241,0.1)",
-      pointBackgroundColor: pointColors,
-      pointRadius: 4,
-      tension: 0.3,
-      fill: true,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.parsed.y >= 0 ? "+" : ""}₪${ctx.parsed.y.toFixed(2)}`
+fetch(`/table/${TABLE_ID}/api/chart/player/${PLAYER_ID}`)
+  .then(r => r.json())
+  .then(data => {
+    const pointColors = data.data.map(v => v >= 0 ? "#10b981" : "#ef4444");
+    new Chart(document.getElementById("playerLineChart"), {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Cumulative P&L",
+          data: data.data,
+          borderColor: "#6366f1",
+          backgroundColor: "rgba(99,102,241,0.1)",
+          pointBackgroundColor: pointColors,
+          pointRadius: 4,
+          tension: 0.3,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y >= 0 ? "+" : ""}₪${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: "#1f2937" } },
+          y: {
+            grid: { color: "#1f2937" },
+            ticks: {
+              callback: v => (v >= 0 ? "+" : "") + "₪" + v.toFixed(0)
+            }
+          }
         }
       }
-    },
-    scales: {
-      x: { grid: { color: "#1f2937" } },
-      y: {
-        grid: { color: "#1f2937" },
-        ticks: {
-          callback: v => (v >= 0 ? "+" : "") + "₪" + v.toFixed(0)
-        }
-      }
-    }
-  }
-});
+    });
+  });
 
 function openEditModal(id, date, amount, notes) {
   document.getElementById("editForm").action = "/result/" + id + "/edit";

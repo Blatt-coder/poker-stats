@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — PokerStats{% endblock %}
+{% block title %}{{ table.name }} — PokerStats{% endblock %}
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -7,9 +7,13 @@
 
 {% block content %}
 <div class="page-header">
-  <h2>Dashboard</h2>
-  <a href="{{ url_for('log_game') }}" class="btn btn--primary">+ Log Game</a>
+  <h2>{{ table.name }}</h2>
+  <div class="page-header__actions">
+    <button class="btn btn--ghost" id="inviteBtn" onclick="copyInviteLink()">&#128279; Invite Link</button>
+    <a href="{{ url_for('log_game', table_id=table.id) }}" class="btn btn--primary">+ Log Game</a>
+  </div>
 </div>
+<p id="inviteCopied" class="invite-copied" style="display:none">Link copied to clipboard!</p>
 
 <!-- Leaderboard -->
 <div class="card">
@@ -29,7 +33,7 @@
       <tr {% if row.id == current_player_id %}class="row--highlight"{% endif %}>
         <td>{{ loop.index }}</td>
         <td>
-          <a href="{{ url_for('player_profile', player_id=row.id) }}" class="player-link">
+          <a href="{{ url_for('player_profile', table_id=table.id, player_id=row.id) }}" class="player-link">
             {{ row.username }}
           </a>
         </td>
@@ -38,7 +42,7 @@
           {% if row.net_total >= 0 %}+{% endif %}₪{{ "%.2f"|format(row.net_total) }}
         </td>
         <td>
-          <a href="{{ url_for('player_profile', player_id=row.id) }}" class="btn btn--sm btn--ghost">View</a>
+          <a href="{{ url_for('player_profile', table_id=table.id, player_id=row.id) }}" class="btn btn--sm btn--ghost">View</a>
         </td>
       </tr>
       {% endfor %}
@@ -66,14 +70,22 @@
 
 {% block scripts %}
 <script>
-const chartDefaults = {
-  color: "#9ca3af",
-  font: { family: "'Inter', sans-serif" },
-};
-Chart.defaults.color = chartDefaults.color;
+const TABLE_ID = {{ table.id }};
+const INVITE_CODE = "{{ table.invite_code }}";
+
+Chart.defaults.color = "#9ca3af";
+
+function copyInviteLink() {
+  const link = window.location.origin + "/join/" + INVITE_CODE;
+  navigator.clipboard.writeText(link).then(() => {
+    const msg = document.getElementById("inviteCopied");
+    msg.style.display = "block";
+    setTimeout(() => { msg.style.display = "none"; }, 3000);
+  });
+}
 
 // Line chart
-fetch("/api/chart/cumulative")
+fetch(`/table/${TABLE_ID}/api/chart/cumulative`)
   .then(r => r.json())
   .then(data => {
     new Chart(document.getElementById("lineChart"), {
@@ -108,7 +120,7 @@ fetch("/api/chart/cumulative")
   });
 
 // Bar chart
-fetch("/api/chart/bar")
+fetch(`/table/${TABLE_ID}/api/chart/bar`)
   .then(r => r.json())
   .then(data => {
     new Chart(document.getElementById("barChart"), {

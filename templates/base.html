@@ -10,11 +10,14 @@
 <body>
   {% if session.player_id %}
   <nav class="navbar">
-    <a class="nav-brand" href="{{ url_for('dashboard') }}">&#9824; PokerStats</a>
+    <a class="nav-brand" href="{{ url_for('home') }}">&#9824; PokerStats</a>
     <div class="nav-links">
-      <a href="{{ url_for('dashboard') }}">Dashboard</a>
-      <a href="{{ url_for('log_game') }}">Log Game</a>
-      <a href="{{ url_for('player_profile', player_id=session.player_id) }}">My Stats</a>
+      <a href="{{ url_for('home') }}">Home</a>
+      {% if current_table %}
+      <a href="{{ url_for('dashboard', table_id=current_table.id) }}">Dashboard</a>
+      <a href="{{ url_for('log_game', table_id=current_table.id) }}">Log Game</a>
+      <a href="{{ url_for('player_profile', table_id=current_table.id, player_id=session.player_id) }}">My Stats</a>
+      {% endif %}
       <a href="{{ url_for('logout') }}" class="nav-logout">Logout ({{ session.username }})</a>
     </div>
   </nav>
