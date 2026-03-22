@@ -18,6 +18,13 @@
         <input id="password" name="password" type="password" autocomplete="new-password"
                placeholder="At least 4 characters" required minlength="4" />
       </div>
+      {% if invite_required %}
+      <div class="form-group">
+        <label for="invite_code">Invite Code</label>
+        <input id="invite_code" name="invite_code" type="text"
+               placeholder="Enter invite code" required />
+      </div>
+      {% endif %}
       <button type="submit" class="btn btn--primary btn--full">Create Account</button>
     </form>
 
